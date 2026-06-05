@@ -1,5 +1,8 @@
 import sys,csv
 from datetime import datetime
+import sqlite3
+
+db_name="expense.db"
 
 def main():
 
@@ -15,6 +18,20 @@ def main():
 
     request_map[sys.argv[1]]()
 
+def initialize_db():
+    conn=sqlite3.connect(db_name)
+    cur=conn.cursor()
+
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS expenses(
+    id INTEGER PRIMARY KEY AUTOINCREMENT.
+    date TEXT NOT NULL,
+    amount TEXT NOT NULL,
+    transaction_type TEXT NOT NULL,
+    note TEXT)""")
+
+    conn.commit()
+    conn.close()
 
 def add_expense():
     t_types={1:"send",2:"recieve"}
@@ -35,14 +52,19 @@ def add_expense():
     
 
 def write_expense(expense):
-    with open("expense.csv", "a") as file:
-        writer=csv.DictWriter(file,fieldnames=["Date","Amount","TransactionType","Notes"])
-        writer.writerow({
-            "Date":expense['date'],
-            "Amount":expense['amount'],
-            "TransactionType": expense['t_type'],
-            "Notes":expense['note']
-        })
+    conn=sqlite3.connect(db_name)
+    cur=conn.cursor()
+
+    cur.execute("""INSERT INTO expenses(
+    date,amount,transaction_type,note) VALUES(?,?,?,?)""",(
+        expense["date"],
+        expense["amount"],
+        expense["t_type"],
+        expense["note"]
+
+    ))
+    conn.commit()
+    conn.close()
 
 
 
