@@ -2,11 +2,12 @@ import sqlite3
 from datetime import datetime
 import calendar
 
+
 class ExpenseTracker:
     """Class ExpenseTracker handle DB CRUD operations"""
 
-    def __init__(self,db_name="expense.db"):
-        self.db=db_name
+    def __init__(self, db_name="expense.db"):
+        self.db = db_name
         self.initialize_db()
 
     def get_connection(self):
@@ -22,30 +23,33 @@ class ExpenseTracker:
                 transaction_type TEXT NOT NULL,
                 note TEXT)""")
 
-    def add_expense(self,expense):
+    def add_expense(self, expense):
         with self.get_connection() as conn:
-            conn.execute("""INSERT INTO expenses(date,amount,transaction_type,note) VALUES(?,?,?,?)""",(
-        expense["date"],
-        expense["amount"],
-        expense["t_type"],
-        expense["note"]
-    ))
+            conn.execute(
+                """INSERT INTO expenses(date,amount,transaction_type,note) VALUES(?,?,?,?)""",
+                (
+                    expense["date"],
+                    expense["amount"],
+                    expense["t_type"],
+                    expense["note"],
+                ),
+            )
 
     def read_all(self):
         with self.get_connection() as conn:
             cursor = conn.cursor()
-            query=("""SELECT * FROM expenses""")
+            query = """SELECT * FROM expenses ORDER BY date, id"""
             cursor.execute(query)
-            rows=cursor.fetchall()
-            print(rows)      
+            rows = cursor.fetchall()
+            print(rows)
 
-    def search_date(self,date):
+    def search_date(self, date):
         with self.get_connection() as conn:
             conn.row_factory = sqlite3.Row
             cursor = conn.cursor()
-            query=("""SELECT * FROM expenses WHERE date=?""")
-            cursor.execute(query,(date,))
-            rows=cursor.fetchall()
+            query = """SELECT * FROM expenses WHERE date=? ORDER BY id"""
+            cursor.execute(query, (date,))
+            rows = cursor.fetchall()
             return rows
 
     def monthly_view(self, month_num):
@@ -59,6 +63,20 @@ class ExpenseTracker:
             cursor.execute(query, (f"{month_num:02d}",))
             row = cursor.fetchone()
             return dict(row) if row else {"total_spent": 0, "total_receive": 0}
+
+    def get_balance_up_to_date(self, date):
+        """Calculates the total balance up to (but not including) a specific date."""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            query = """SELECT
+                COALESCE(SUM(CASE
+                    WHEN transaction_type='receive' THEN amount
+                    WHEN transaction_type='spent' THEN -amount
+                    ELSE 0 END), 0) as balance
+                FROM expenses WHERE date < ?"""
+            cursor.execute(query, (date,))
+            result = cursor.fetchone()
+            return result[0] if result else 0
 
     def monthly_report(self, month=None):
         with self.get_connection() as conn:
