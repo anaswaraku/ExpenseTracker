@@ -2,6 +2,7 @@ import sys,csv
 from datetime import datetime,date
 import sqlite3
 from expense import ExpenseTracker
+from fpdf import FPDF
 
 def main():
     db=ExpenseTracker()
@@ -40,19 +41,36 @@ def monthly_report(db):
         print("No data found.")
         return
 
-    print(
+    data=(
         tabulate(
             rows,
             headers=["Month", "Spent", "Receive"],
-            tablefmt="double_grid",  # try: grid, pipe, pretty, rounded_grid
+            tablefmt="grid",  # try: grid, pipe, pretty, rounded_grid
             floatfmt=".2f",
         )
     )
+    print(data)
+    choice=int(input("Do you want to save? \n1-Yes\n2-No\n"))
+    if choice==1:
+        to_pdf(data)
+    else:
+        pass
+
+def to_pdf(data):
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("Arial",size=10)
+    pdf.multi_cell(0,5,data)
+    pdf.output("monthly_report.pdf")
+    print("PDF saved")
+
+
+
 
 
 def add_expense(db):
-    t_types={1:"spent",2:"recieve"}
-    choice=int(input("TRANSACTION TYPE \n1-Spend\n2-Recieve\n"))
+    t_types={1:"spent",2:"receive"}
+    choice=int(input("TRANSACTION TYPE \n1-Spend\n2-receive\n"))
 
     expense={
         "date": validate_date(input("DATE: ")),
