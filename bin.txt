@@ -1,0 +1,12 @@
+cursor=conn.cursor()
+            month_num=datetime.strptime(month,"%B").month
+            
+            query="""SELECT SUM(CASE 
+            WHEN transaction_type='spent' THEN amount ELSE 0 END) AS total_spent,
+            SUM(CASE 
+            WHEN transaction_type='recieve' THEN amount ELSE 0 END) AS total_recieve FROM expenses WHERE strftime('%m',date)=?"""
+            cursor.row_factory=sqlite3.Row
+            cursor.execute(query,(f"{month_num:02d}",))
+            rows=cursor.fetchone()
+            data=[col[0] for col in cursor.description]
+            return zip(data,rows)

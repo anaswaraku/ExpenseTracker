@@ -4,25 +4,33 @@ import sqlite3
 from expense import ExpenseTracker
 
 def main():
-    # if len(sys.argv)==1:
-    #     sys.exit("Send Request")
-    # elif sys.argv[1] in ['add','search','report']:
-    #         pass
-    # else:
-    #     raise ValueError("Invalid Request")
-
     db=ExpenseTracker()
-    #add_expense(db)
+    if len(sys.argv)==1:
+        sys.exit("Send Request [ADD|SEARCH|REPORT]")
+    command=sys.argv[1].lower()
+    commands={
+        "add":lambda:add_expense(db),
+        "search":lambda:db.read_all(),
+        "report":lambda:monthly_report(db)
+    }
+    try:
+        commands[command]()
+    except KeyError:
+        raise ValueError("Invalid Request")
 
-    if sys.argv[1]=='add':
-        add_expense(db)
-    elif sys.argv[1]=='search':
-        db.read_all()
-    elif sys.argv[1]=='report':
-        db.monthly_report('January')
+    
+def monthly_report(db):
+    month=input("ENTER MONTH: ")
+    if month:
+        r=db.monthly_report(month)
+        for col,value in r:
+                print(f"{col}:{value}\n")
     else:
-        db.deletetable()
+        report=db.monthly_report()
+        for item in report:
+            print(f"{item},{item['data']}")
 
+    #print(data['total_spent'])
 
 
 def add_expense(db):
@@ -35,8 +43,9 @@ def add_expense(db):
         "t_type":t_types[choice],
         "note": input("NOTE: ")
     }
-    
     db.add_expense(expense)
+    
+    
     
 
 def validate_date(inp_date):
@@ -53,8 +62,7 @@ def search_expense():
     pass
 
 
-def update_expense():
-    pass
+
 
 
 if __name__=='__main__':
