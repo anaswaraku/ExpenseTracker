@@ -2,10 +2,40 @@ import sys,csv
 from datetime import datetime
 import sqlite3
 
-db_name="expense.db"
+class ExpenseTracker:
+    def __init__(self,db_name="expense.db"):
+        self.db=db_name
+        self.initialize_db()
+    
+    def get_connection(self):
+        return sqlite3.connect(self.db)
+       
+    def initialize_db(self):
+        with self.get_connection() as conn:
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS expenses(
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                date TEXT NOT NULL,
+                amount TEXT NOT NULL,
+                transaction_type TEXT NOT NULL,
+                note TEXT)""")
+
+    def add_expense(self,expense):
+        with self.get_connection() as conn:
+            conn.execute("""INSERT INTO expenses(date,amount,transaction_type,note) VALUES(?,?,?,?)""",(
+        expense["date"],
+        expense["amount"],
+        expense["t_type"],
+        expense["note"]
+    ))
+    def read_db(self):
+        with self.get_connection() as conn:
+            conn.execute("""SELECT * FROM expenses""")
+            rows=conn.fetchall()
+            print(rows)
+
 
 def main():
-
     if len(sys.argv)==1:
         sys.exit("Send Request")
     elif sys.argv[1] in ['add','search','update']:
@@ -13,27 +43,12 @@ def main():
     else:
         raise ValueError("Invalid Request")
 
-    request_map={
-        "add": add_expense}
+    db=ExpenseTracker()
+    db.read_db()
 
-    request_map[sys.argv[1]]()
 
-def initialize_db():
-    conn=sqlite3.connect(db_name)
-    cur=conn.cursor()
 
-    cur.execute("""
-    CREATE TABLE IF NOT EXISTS expenses(
-    id INTEGER PRIMARY KEY AUTOINCREMENT.
-    date TEXT NOT NULL,
-    amount TEXT NOT NULL,
-    transaction_type TEXT NOT NULL,
-    note TEXT)""")
-
-    conn.commit()
-    conn.close()
-
-def add_expense():
+def add_expense(db):
     t_types={1:"send",2:"recieve"}
     choice=int(input("TRANSACTION TYPE \n1-Send\n2-Recieve\n"))
 
@@ -43,12 +58,8 @@ def add_expense():
         "t_type":t_types[choice],
         "note": input("NOTE: ")
     }
-    try:
-        write_expense(expense)
-    except:
-        sys.exit("Adding Failed")
-    else:
-        sys.exit("Added Successfully")
+    
+    db.add_expense(expense)
     
 
 def write_expense(expense):
