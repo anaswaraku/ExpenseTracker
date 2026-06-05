@@ -27,7 +27,7 @@ def monthly_report(db):
     month = input("Enter month name (or press Enter for all): ").strip()
 
     if month:
-        # --- Single Month Report ---
+        #  Single Month Report 
         try:
             month_num = datetime.strptime(month, "%B").month
         except ValueError:
@@ -51,7 +51,7 @@ def monthly_report(db):
             tablefmt="grid",
             floatfmt=".2f",
         )
-        print("\n--- Monthly Summary ---")
+        print("\n Monthly Summary ")
         print(summary_table)
 
         transactions = db.get_transactions_for_month(month_num)
@@ -61,7 +61,7 @@ def monthly_report(db):
 
         
     else:
-        # --- All Months Report ---
+        #  All Months Report 
         report = db.monthly_report()
         rows = [
             (item["month"], item["data"]["total_spent"], item["data"]["total_receive"])
@@ -176,7 +176,7 @@ def search_expense(db):
     net_change = total_received - total_spent
     closing_balance = opening_balance + net_change
 
-    print("\n--- Summary for the day ---")
+    print("\n Summary for the day ")
     print(f"Opening Balance: {opening_balance:.2f}")
     print(f"Total Spent: {total_spent:.2f}")
     print(f"Total Received: {total_received:.2f}")
