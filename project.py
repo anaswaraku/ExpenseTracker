@@ -3,6 +3,8 @@ from datetime import datetime, date
 import sqlite3
 from expense import ExpenseTracker
 from fpdf import FPDF
+import pandas as pd
+from tabulate import tabulate
 
 
 def main():
@@ -21,34 +23,74 @@ def main():
         raise ValueError("Invalid Request")
 
 
-from tabulate import tabulate
-
-
 def monthly_report(db):
     month = input("Enter month name (or press Enter for all): ").strip()
-    report = db.monthly_report(month) if month else db.monthly_report()
 
-    rows = (
-        [(month, report["total_spent"], report["total_receive"])]
-        if month
-        else [
+    if month:
+        # --- Single Month Report ---
+        try:
+            month_num = datetime.strptime(month, "%B").month
+        except ValueError:
+            print("Invalid month name.")
+            return
+
+        report_data = db.monthly_view(month_num)
+        if not report_data or (
+            report_data["total_spent"] == 0 and report_data["total_receive"] == 0
+        ):
+            print(f"No data found for {month}.")
+            return
+
+        # Build and print summary table
+        summary_rows = [
+            (month, report_data["total_spent"], report_data["total_receive"])
+        ]
+        summary_table = tabulate(
+            summary_rows,
+            headers=["Month", "Total Spent", "Total Received"],
+            tablefmt="grid",
+            floatfmt=".2f",
+        )
+        print("\n--- Monthly Summary ---")
+        print(summary_table)
+
+        # --- NEW: Pandas Statistics for spending ---
+        transactions = db.get_transactions_for_month(month_num)
+        spent_transactions = [
+            dict(row) for row in transactions if row["transaction_type"] == "spent"
+        ]
+
+        stats_table = ""
+        if spent_transactions:
+            df = pd.DataFrame(spent_transactions)
+            stats = df["amount"].describe()
+            print("\n--- Spending Statistics (from pandas) ---")
+            stats_df = stats.reset_index()
+            stats_df.columns = ["Statistic", "Value"]
+            stats_table = tabulate(
+                stats_df, headers="keys", tablefmt="grid", floatfmt=".2f"
+            )
+            print(stats_table)
+
+        data = f"--- Monthly Summary ---\n{summary_table}"
+        if stats_table:
+            data += f"\n\n--- Spending Statistics ---\n{stats_table}"
+    else:
+        # --- All Months Report ---
+        report = db.monthly_report()
+        rows = [
             (item["month"], item["data"]["total_spent"], item["data"]["total_receive"])
             for item in report
             if item["data"]["total_spent"] or item["data"]["total_receive"]
         ]
-    )
+        if not rows:
+            print("No data found.")
+            return
+        data = tabulate(
+            rows, headers=["Month", "Spent", "Receive"], tablefmt="grid", floatfmt=".2f"
+        )
+        print(data)
 
-    if not rows:
-        print("No data found.")
-        return
-
-    data = tabulate(
-        rows,
-        headers=["Month", "Spent", "Receive"],
-        tablefmt="grid",  # try: grid, pipe, pretty, rounded_grid
-        floatfmt=".2f",
-    )
-    print(data)
     while True:
         try:
             choice = int(input("Do you want to save? \n1-Yes\n2-No\n"))

@@ -84,6 +84,18 @@ class ExpenseTracker:
             cursor.execute(query, (f"{month_num:02d}",))
             return cursor.fetchall()
 
+    def get_transactions_for_month(self, month_num):
+        """Fetches all transactions for a given month number."""
+        with self.get_connection() as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            query = """SELECT date, amount, transaction_type, note, category
+                       FROM expenses
+                       WHERE strftime('%m', date) = ?
+                       ORDER BY date, id"""
+            cursor.execute(query, (f"{month_num:02d}",))
+            return cursor.fetchall()
+
     def get_balance_up_to_date(self, date):
         """Calculates the total balance up to (but not including) a specific date."""
         with self.get_connection() as conn:
