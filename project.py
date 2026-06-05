@@ -41,7 +41,7 @@ def monthly_report(db):
             print(f"No data found for {month}.")
             return
 
-        # Build and print summary table
+        
         summary_rows = [
             (month, report_data["total_spent"], report_data["total_receive"])
         ]
@@ -54,27 +54,12 @@ def monthly_report(db):
         print("\n--- Monthly Summary ---")
         print(summary_table)
 
-        # --- NEW: Pandas Statistics for spending ---
         transactions = db.get_transactions_for_month(month_num)
         spent_transactions = [
             dict(row) for row in transactions if row["transaction_type"] == "spent"
         ]
 
-        stats_table = ""
-        if spent_transactions:
-            df = pd.DataFrame(spent_transactions)
-            stats = df["amount"].describe()
-            print("\n--- Spending Statistics (from pandas) ---")
-            stats_df = stats.reset_index()
-            stats_df.columns = ["Statistic", "Value"]
-            stats_table = tabulate(
-                stats_df, headers="keys", tablefmt="grid", floatfmt=".2f"
-            )
-            print(stats_table)
-
-        data = f"--- Monthly Summary ---\n{summary_table}"
-        if stats_table:
-            data += f"\n\n--- Spending Statistics ---\n{stats_table}"
+        
     else:
         # --- All Months Report ---
         report = db.monthly_report()
