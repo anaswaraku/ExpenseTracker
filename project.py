@@ -1,4 +1,5 @@
-import sys
+import sys,csv
+from datetime import datetime
 
 def main():
 
@@ -9,21 +10,51 @@ def main():
     else:
         raise ValueError("Invalid Request")
 
-    t_types={1:"send",2:"recieve"}
     request_map={
         "add": add_expense}
 
+    request_map[sys.argv[1]]()
+
 
 def add_expense():
+    t_types={1:"send",2:"recieve"}
+    choice=int(input("TRANSACTION TYPE \n1-Send\n2-Recieve\n"))
 
     expense={
-        "date":input("DATE: "),
+        "date": validate_date(input("DATE: ")),
         "amount":float(input("AMOUNT: ")),
-        "t_type":t_types[input("TRANSACTION TYPE \n1-Send\2-Recieve")]
-        "note"":"input("NOTE: ")
+        "t_type":t_types[choice],
+        "note": input("NOTE: ")
     }
-    prin(expense)
+    try:
+        write_expense(expense)
+    except:
+        sys.exit("Adding Failed")
+    else:
+        sys.exit("Added Successfully")
+    
 
+def write_expense(expense):
+    with open("expense.csv", "a") as file:
+        writer=csv.DictWriter(file,fieldnames=["Date","Amount","TransactionType","Notes"])
+        writer.writerow({
+            "Date":expense['date'],
+            "Amount":expense['amount'],
+            "TransactionType": expense['t_type'],
+            "Notes":expense['note']
+        })
+
+
+
+def validate_date(inp_date):
+    try:
+        if "/" in inp_date:
+            dt=datetime.strptime(inp_date, "%m/%d/%Y")
+        else:
+            dt=datetime.strptime(inp_date,"%B %d, %Y")
+        return dt.strftime("%d-%m-%Y")
+    except ValueError:
+        print("invalid date format")
 
 def search_expense():
     pass
