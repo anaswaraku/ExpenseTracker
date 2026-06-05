@@ -5,12 +5,14 @@ from expense import ExpenseTracker
 from fpdf import FPDF
 import pandas as pd
 from tabulate import tabulate
+import requests
 
+api_key='d25103c34f647d2a5d1a0861'
 
 def main():
     db = ExpenseTracker()
     if len(sys.argv) == 1:
-        sys.exit("Send Request [ADD|SEARCH|REPORT]")
+        sys.exit("Send Request [ADD / SEARCH / REPORT]")
     command = sys.argv[1].lower()
     commands = {
         "add": lambda: add_expense(db),
@@ -146,9 +148,15 @@ def validate_date(inp_date):
     except ValueError:
         return None
 
+def to_usd(amnt):
+    amnt=float(amnt)
+    url=f"https://v6.exchangerate-api.com/v6/{api_key}/pair/INR/USD/{amnt}"
+    response=requests.get(url)
+    data=response.json()
+    return data["conversion_result"]
 
 def search_expense(db):
-    date_str = input("Enter Date (e.g., 24/07/2024 or July 24, 2024): ")
+    date_str = input("Enter Date (e.g.,05/06/2026 or June 5, 2026): ")
     dt = validate_date(date_str)
     if not dt:
         print("Invalid date format.")
@@ -175,6 +183,7 @@ def search_expense(db):
     )
     net_change = total_received - total_spent
     closing_balance = opening_balance + net_change
+    in_usd=to_usd(closing_balance)
 
     print("\n Summary for the day ")
     print(f"Opening Balance: {opening_balance:.2f}")
@@ -182,6 +191,7 @@ def search_expense(db):
     print(f"Total Received: {total_received:.2f}")
     print(f"Net Change: {net_change:.2f}")
     print(f"Closing Balance: {closing_balance:.2f}")
+    print(f"Balance in USD: {in_usd:.2f}")
 
 
 if __name__ == "__main__":
