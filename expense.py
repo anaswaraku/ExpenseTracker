@@ -41,11 +41,12 @@ class ExpenseTracker:
 
     def search_date(self,date):
         with self.get_connection() as conn:
+            conn.row_factory = sqlite3.Row
             cursor = conn.cursor()
             query=("""SELECT * FROM expenses WHERE date=?""")
             cursor.execute(query,(date,))
             rows=cursor.fetchall()
-            print(rows)
+            return rows
 
     def monthly_view(self, month_num):
         with self.get_connection() as conn:
@@ -58,6 +59,7 @@ class ExpenseTracker:
             cursor.execute(query, (f"{month_num:02d}",))
             row = cursor.fetchone()
             return dict(row) if row else {"total_spent": 0, "total_receive": 0}
+
     def monthly_report(self, month=None):
         with self.get_connection() as conn:
             if month:

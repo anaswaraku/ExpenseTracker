@@ -11,7 +11,7 @@ def main():
     command=sys.argv[1].lower()
     commands={
         "add":lambda:add_expense(db),
-        "search":lambda:db.read_all(),
+        "search":lambda:search_expense(db),
         "report":lambda:monthly_report(db)
     }
     try:
@@ -59,14 +59,10 @@ def monthly_report(db):
 def to_pdf(data):
     pdf = FPDF()
     pdf.add_page()
-    pdf.set_font("Arial",size=10)
+    pdf.set_font("Courier",size=10)
     pdf.multi_cell(0,5,data)
     pdf.output("monthly_report.pdf")
     print("PDF saved")
-
-
-
-
 
 def add_expense(db):
     t_types={1:"spent",2:"receive"}
@@ -80,7 +76,6 @@ def add_expense(db):
     }
     db.add_expense(expense)
 
-
 def validate_date(inp_date):
     try:
         if "/" in inp_date:
@@ -91,8 +86,10 @@ def validate_date(inp_date):
     except ValueError:
         return None
 
-def search_expense():
-    pass
+def search_expense(db):
+    dt=input("Enter Date: ")
+    dt=validate_date(dt)
+    print(db.search_date(dt))
 
 
 if __name__=='__main__':
