@@ -1,15 +1,5 @@
 import sys
 
-class ExpenseTracker:
-
-    def __init__(self,date,amount,transaction_type,purpose):
-        self.date = date
-        self.amount = amount
-        self.transaction_type = transaction_type
-        self.purpose = purpose
-
-        if self.type not in ['spend','recieve']:
-            raise ValueError("Type can be either Spend/Receive")
 def main():
 
     if len(sys.argv)==1:
@@ -19,17 +9,20 @@ def main():
     else:
         raise ValueError("Invalid Request")
 
+    t_types={1:"send",2:"recieve"}
     request_map={
         "add": add_expense}
 
+
 def add_expense():
-    expense = ExpenseTracker(
-        date=input(),
-        amount=input(),
-        transaction_type=input(),
-        purpose=input(),
-    )
-    return expense
+
+    expense={
+        "date":input("DATE: "),
+        "amount":float(input("AMOUNT: ")),
+        "t_type":t_types[input("TRANSACTION TYPE \n1-Send\2-Recieve")]
+        "note"":"input("NOTE: ")
+    }
+    prin(expense)
 
 
 def search_expense():
