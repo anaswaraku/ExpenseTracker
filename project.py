@@ -18,19 +18,36 @@ def main():
     except KeyError:
         raise ValueError("Invalid Request")
 
-    
-def monthly_report(db):
-    month=input("ENTER MONTH: ")
-    if month:
-        r=db.monthly_report(month)
-        for col,value in r:
-                print(f"{col}:{value}\n")
-    else:
-        report=db.monthly_report()
-        for item in report:
-            print(f"{item},{item['data']}")
 
-    #print(data['total_spent'])
+from tabulate import tabulate
+
+
+def monthly_report(db):
+    month = input("Enter month name (or press Enter for all): ").strip()
+    report = db.monthly_report(month) if month else db.monthly_report()
+
+    rows = (
+        [(month, report["total_spent"], report["total_receive"])]
+        if month
+        else [
+            (item["month"], item["data"]["total_spent"], item["data"]["total_receive"])
+            for item in report
+            if item["data"]["total_spent"] or item["data"]["total_receive"]
+        ]
+    )
+
+    if not rows:
+        print("No data found.")
+        return
+
+    print(
+        tabulate(
+            rows,
+            headers=["Month", "Spent", "Receive"],
+            tablefmt="double_grid",  # try: grid, pipe, pretty, rounded_grid
+            floatfmt=".2f",
+        )
+    )
 
 
 def add_expense(db):
@@ -44,9 +61,7 @@ def add_expense(db):
         "note": input("NOTE: ")
     }
     db.add_expense(expense)
-    
-    
-    
+
 
 def validate_date(inp_date):
     try:
@@ -60,9 +75,6 @@ def validate_date(inp_date):
 
 def search_expense():
     pass
-
-
-
 
 
 if __name__=='__main__':
