@@ -93,11 +93,18 @@ def add_expense(db):
         except ValueError:
             print("Invalid amount. Please enter a number.")
 
+    category = "N/A"
+    if t_types[choice] == "spent":
+        category = input("CATEGORY (e.g., Food, Transport): ").strip()
+        if not category:
+            category = "Uncategorized"
+
     expense = {
         "date": date_str,
         "amount": amount,
         "t_type": t_types[choice],
         "note": input("NOTE: "),
+        "category": category,
     }
     db.add_expense(expense)
 

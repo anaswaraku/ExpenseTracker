@@ -21,17 +21,23 @@ class ExpenseTracker:
                 date TEXT NOT NULL,
                 amount REAL NOT NULL,
                 transaction_type TEXT NOT NULL,
-                note TEXT)""")
+                note TEXT,
+                category TEXT)""")
+            try:
+                conn.execute("SELECT category FROM expenses LIMIT 1")
+            except sqlite3.OperationalError:
+                conn.execute("ALTER TABLE expenses ADD COLUMN category TEXT")
 
     def add_expense(self, expense):
         with self.get_connection() as conn:
             conn.execute(
-                """INSERT INTO expenses(date,amount,transaction_type,note) VALUES(?,?,?,?)""",
+                """INSERT INTO expenses(date,amount,transaction_type,note,category) VALUES(?,?,?,?,?)""",
                 (
                     expense["date"],
                     expense["amount"],
                     expense["t_type"],
                     expense["note"],
+                    expense["category"],
                 ),
             )
 
@@ -64,6 +70,20 @@ class ExpenseTracker:
             row = cursor.fetchone()
             return dict(row) if row else {"total_spent": 0, "total_receive": 0}
 
+    def get_category_report_for_month(self, month_num):
+        with self.get_connection() as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            query = """SELECT
+                category,
+                COALESCE(SUM(amount), 0) as total_spent
+                FROM expenses
+                WHERE strftime('%m', date) = ? AND transaction_type = 'spent'
+                GROUP BY category
+                ORDER BY total_spent DESC"""
+            cursor.execute(query, (f"{month_num:02d}",))
+            return cursor.fetchall()
+
     def get_balance_up_to_date(self, date):
         """Calculates the total balance up to (but not including) a specific date."""
         with self.get_connection() as conn:
@@ -79,15 +99,39 @@ class ExpenseTracker:
             return result[0] if result else 0
 
     def monthly_report(self, month=None):
-        with self.get_connection() as conn:
-            if month:
+        if month:
+            try:
                 month_num = datetime.strptime(month, "%B").month
                 return self.monthly_view(month_num)
-            else:
+            except ValueError:
+                return None
+        else:
+            with self.get_connection() as conn:
+                conn.row_factory = sqlite3.Row
+                cursor = conn.cursor()
+                query = """
+                    SELECT
+                        strftime('%m', date) AS month_num_str,
+                        COALESCE(SUM(CASE WHEN transaction_type = 'spent' THEN amount ELSE 0 END), 0) AS total_spent,
+                        COALESCE(SUM(CASE WHEN transaction_type = 'receive' THEN amount ELSE 0 END), 0) AS total_receive
+                    FROM expenses
+                    GROUP BY month_num_str
+                    ORDER BY month_num_str
+                """
+                cursor.execute(query)
+                db_rows = cursor.fetchall()
+
                 reports = []
-                for i in range(1, 13):
+                for row in db_rows:
+                    month_num = int(row["month_num_str"])
                     reports.append(
-                        {"month": calendar.month_name[i], "data": self.monthly_view(i)}
+                        {
+                            "month": calendar.month_name[month_num],
+                            "data": {
+                                "total_spent": row["total_spent"],
+                                "total_receive": row["total_receive"],
+                            },
+                        }
                     )
                 return reports
 
